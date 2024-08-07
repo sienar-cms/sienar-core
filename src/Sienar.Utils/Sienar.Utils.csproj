@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Sienar</RootNamespace>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+		<PackageId>Sienar.Utils</PackageId>
+		<Title>Sienar.Utils</Title>
+		<PackageVersion>0.1.0</PackageVersion>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<Authors>Christian LeVesque</Authors>
+		<Description>Contains the Sienar utilities used to create apps with a core set of features, such as menu generation, enqueueing scripts and styles, CRUD data stores, and more.</Description>
+		<Copyright>Copyright 2024 Christian LeVesque</Copyright>
+		<PackageProjectUrl>https://sienar.io</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/sienar-cms/sienar</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>sienar cms utilities blazor plugin</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="./README.md" Pack="true" PackagePath="/"/>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0"/>
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0"/>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
+		<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0"/>
+	</ItemGroup>
+
+</Project>

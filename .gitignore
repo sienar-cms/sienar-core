@@ -1,0 +1,23 @@
+# IDE
+.idea/
+*.iml
+*.sln.ide
+_ReSharper.*
+*.user
+*.suo
+.vs/
+.vscode/
+*.DotSettings
+
+# .NET
+[Oo]bj/
+[Bb]in/
+[Bb]uild/
+.nuget/
+*.log
+
+**/coverage.xml
+**/coveragereport
+
+# Dev
+setup.ps1
