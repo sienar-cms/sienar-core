@@ -57,6 +57,18 @@ The `Sienar.WebPlugin` package provides the necessary configuration to run a Sie
 [//]: # ()
 [//]: # (The `Sienar.MauiPlugin` does the same thing as `Sienar.WasmPlugin` and `Sienar.WebPlugin`, but for .NET MAUI Blazor Hybrid apps.)
 
+## Sienar architecture
+
+Sienar uses separate packages for supplying certain architecture-specific functionality. For example, instead of tying developers to a specific technology like EntityFramework, developers can choose to implement the `IRepository` interface using whatever backend they choose. Some common implementations have already been created for you, and only need to be plugged into your app.
+
+### Sienar.Architecture.EntityFramework
+
+The `Sienar.Architecture.EntityFramework` package supplies `IRepository` implementations that use EntityFramework as the backing store. This is appropriate for most web apps that use EntityFramework, as well as many desktop and mobile clients that need to store information in a database.
+
+### Sienar.Architecture.Rest
+
+The `Sienar.Architecture.Rest` package supplies `IRepository` implementations that use REST APIs as the backing store. This can be useful for Blazor WASM clients and desktop/mobile clients that need to store information remotely on a web server.
+
 ## Other resources
 
 The documentation can be found at [sienar.io](https://sienar.io).
@@ -65,11 +77,3 @@ The documentation can be found at [sienar.io](https://sienar.io).
 
 - the [Sienar CMS plugin](https://github.com/sienar-cms/plugin-cms) provides a full CMS
 - the [MailKit plugin](https://github.com/sienar-cms/plugin-mailkit) provides email capabilities via MailKit
-
-### Architecture
-
-Sienar uses separate packages for supplying certain architecture-specific functionality. For example, instead of tying developers to a specific technology like EntityFramework, developers can choose to implement the `IRepository` interface using whatever backend they choose. Some common implementations have already been created for you, and only need to be plugged into your app.
-
-The [REST architecture package](https://github.com/sienar-cms/architecture-rest) supplies `IRepository` implementations that use REST APIs as the backing store. This can be useful for desktop or mobile clients that need to store information remotely on a web server.
-
-The [EntityFramework architecture package](https://github.com/sienar-cms/architecture-ef) supplies `IRepository` implementations that use EntityFramework as the backing store. This is appropriate for most web apps that use EntityFramework, as well as many desktop and mobile clients that need to store information locally in a SQLite database.
