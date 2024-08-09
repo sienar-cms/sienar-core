@@ -32,9 +32,9 @@ public static class SienarUtilsServiceCollectionExtensions
 		self.TryAddScoped(typeof(IService<,>), typeof(Service<,>));
 		self.TryAddScoped(typeof(IResultService<>), typeof(ResultService<>));
 		self.TryAddSingleton<IDashboardProvider, DashboardProvider>();
-		self.TryAddSingleton<IDashboardGenerator, DashboardGenerator>();
+		self.TryAddScoped<IDashboardGenerator, DashboardGenerator>();
 		self.TryAddSingleton<IMenuProvider, MenuProvider>();
-		self.TryAddSingleton<IMenuGenerator, MenuGenerator>();
+		self.TryAddScoped<IMenuGenerator, MenuGenerator>();
 		self.TryAddSingleton<IScriptProvider, ScriptProvider>();
 		self.TryAddSingleton<IStyleProvider, StyleProvider>();
 
