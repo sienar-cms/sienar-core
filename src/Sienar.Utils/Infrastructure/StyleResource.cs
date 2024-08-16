@@ -17,6 +17,14 @@ public class StyleResource
 	public required string Href { get; set; }
 
 	/// <summary>
+	/// The name of the style resource
+	/// </summary>
+	/// <remarks>
+	/// This name should reflect the name of the library, if applicable. For example, if the style resource is the CSS file for Bootstrap, this property should be set to <c>"Bootstrap"</c>
+	/// </remarks>
+	public string Name { get; set; } = string.Empty;
+
+	/// <summary>
 	/// The value to use for the <c>crossorigin</c> attribute
 	/// </summary>
 	public CrossOriginMode? CrossOriginMode { get; set; }

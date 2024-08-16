@@ -17,6 +17,14 @@ public class ScriptResource
 	public required string Src { get; set; }
 
 	/// <summary>
+	/// The name of the script resource
+	/// </summary>
+	/// <remarks>
+	/// This name should reflect the name of the library, if applicable. For example, if the script resource is the JS file for Bootstrap, this property should be set to <c>"Bootstrap"</c>
+	/// </remarks>
+	public string Name { get; set; } = string.Empty;
+
+	/// <summary>
 	/// Whether the script resource should be included as a <b>module</b>
 	/// </summary>
 	public bool IsModule { get; set; }
