@@ -14,37 +14,45 @@ public class ScriptResource
 	/// <remarks>
 	/// The URL provided here should either be absolute (e.g., to a CDN link) or root-relative (e.g., <c>/_content/My.Plugin.Assembly/main.js</c>).
 	/// </remarks>
-	public required string Src { get; init; }
+	public required string Src { get; set; }
+
+	/// <summary>
+	/// The name of the script resource
+	/// </summary>
+	/// <remarks>
+	/// This name should reflect the name of the library, if applicable. For example, if the script resource is the JS file for Bootstrap, this property should be set to <c>"Bootstrap"</c>
+	/// </remarks>
+	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Whether the script resource should be included as a <b>module</b>
 	/// </summary>
-	public bool IsModule { get; init; }
+	public bool IsModule { get; set; }
 
 	/// <summary>
 	/// Whether the script resource should be included with <b>async</b>
 	/// </summary>
-	public bool IsAsync { get; init; }
+	public bool IsAsync { get; set; }
 
 	/// <summary>
 	/// Whether the script resource should be included with <b>defer</b>
 	/// </summary>
-	public bool ShouldDefer { get; init; }
+	public bool ShouldDefer { get; set; }
 
 	/// <summary>
 	/// The value to use for the <c>crossorigin</c> attribute
 	/// </summary>
-	public CrossOriginMode? CrossOriginMode { get; init; }
+	public CrossOriginMode? CrossOriginMode { get; set; }
 
 	/// <summary>
 	/// The value to use for the <c>referrerpolicy</c> attribute
 	/// </summary>
-	public ReferrerPolicy? ReferrerPolicy { get; init; }
+	public ReferrerPolicy? ReferrerPolicy { get; set; }
 
 	/// <summary>
 	/// The expected hash of the resource
 	/// </summary>
-	public string? Integrity { get; init; }
+	public string? Integrity { get; set; }
 
 	/// <summary>
 	/// Returns <c>"module"</c> if the script is an ES module, otherwise <c>null</c>
