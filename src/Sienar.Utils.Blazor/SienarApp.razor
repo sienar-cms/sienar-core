@@ -1,0 +1,29 @@
+﻿@using System.Reflection
+@inject IComponentProvider ComponentProvider
+@* ReSharper disable once CollectionNeverUpdated.Local *@
+@inject IRoutableAssemblyProvider AssemblyProvider
+
+<Router
+	AppAssembly="@_rootAssembly"
+	AdditionalAssemblies="@_assemblies">
+	<Found Context="routeData">
+		<AuthorizeRouteView
+			RouteData="@routeData"
+			DefaultLayout="@ComponentProvider.DefaultLayout"/>
+	</Found>
+</Router>
+
+@code {
+
+	private Assembly? _rootAssembly;
+	private List<Assembly>? _assemblies;
+
+	/// <inheritdoc />
+	protected override void OnInitialized()
+	{
+		_assemblies = [..AssemblyProvider];
+		_rootAssembly = _assemblies[0];
+		_assemblies.RemoveAt(0);
+	}
+
+}

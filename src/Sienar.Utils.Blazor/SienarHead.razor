@@ -1,0 +1,26 @@
+﻿@* ReSharper disable CollectionNeverUpdated.Local *@
+@inject IStyleProvider StyleProvider
+@inject IScriptProvider ScriptProvider
+@* ReSharper restore CollectionNeverUpdated.Local *@
+
+@foreach (var stylesheet in StyleProvider)
+{
+	<link
+		crossorigin="@stylesheet.CrossOriginMode.GetHtmlValue()"
+		href="@stylesheet.Href"
+		integrity="@stylesheet.Integrity"
+		referrerpolicy="@stylesheet.ReferrerPolicy.GetHtmlValue()"
+		rel="stylesheet"/>
+}
+
+@foreach (var script in ScriptProvider)
+{
+	<script
+		type="@script.GetScriptType()"
+		src="@script.Src"
+		crossorigin="@script.CrossOriginMode.GetHtmlValue()"
+		referrerpolicy="@script.ReferrerPolicy.GetHtmlValue()"
+		integrity="@script.Integrity"
+		async="@script.IsAsync"
+		defer="@script.ShouldDefer"></script>
+}
