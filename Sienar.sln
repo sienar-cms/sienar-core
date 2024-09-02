@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.Architecture.Rest", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.Architecture.EntityFramework", "src\Sienar.Architecture.EntityFramework\Sienar.Architecture.EntityFramework.csproj", "{74D27840-DFD7-4D56-8EA1-F65CD869E79E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.Utils.Blazor", "src\Sienar.Utils.Blazor\Sienar.Utils.Blazor.csproj", "{AA912997-6374-4690-9B95-A0C3D133B0AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{74D27840-DFD7-4D56-8EA1-F65CD869E79E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74D27840-DFD7-4D56-8EA1-F65CD869E79E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74D27840-DFD7-4D56-8EA1-F65CD869E79E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA912997-6374-4690-9B95-A0C3D133B0AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA912997-6374-4690-9B95-A0C3D133B0AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA912997-6374-4690-9B95-A0C3D133B0AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA912997-6374-4690-9B95-A0C3D133B0AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{89C317BB-02A9-4581-9204-B9E5405A71CD} = {77DB66F3-F1ED-43CB-93DA-1E876B44ABA7}
@@ -60,5 +66,6 @@ Global
 		{0265AA45-B7D6-4535-8FC3-9D479837D161} = {4DEBE1A3-CA5F-467F-9211-3DE636FA78F1}
 		{5DA77268-BC53-45B7-B9C2-2569E5EE82F5} = {77DB66F3-F1ED-43CB-93DA-1E876B44ABA7}
 		{74D27840-DFD7-4D56-8EA1-F65CD869E79E} = {77DB66F3-F1ED-43CB-93DA-1E876B44ABA7}
+		{AA912997-6374-4690-9B95-A0C3D133B0AB} = {77DB66F3-F1ED-43CB-93DA-1E876B44ABA7}
 	EndGlobalSection
 EndGlobal
