@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{77DB66F3-F1ED-43CB-93DA-1E876B44ABA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.WebPlugin", "src\Sienar.WebPlugin\Sienar.WebPlugin.csproj", "{89C317BB-02A9-4581-9204-B9E5405A71CD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.Architecture.Web", "src\Sienar.Architecture.Web\Sienar.Architecture.Web.csproj", "{89C317BB-02A9-4581-9204-B9E5405A71CD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sienar.SqliteUtils", "src\Sienar.SqliteUtils\Sienar.SqliteUtils.csproj", "{E1A973CE-41DB-4BBA-AE86-6C3ED5739CD2}"
 EndProject
