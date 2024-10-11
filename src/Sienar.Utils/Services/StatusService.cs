@@ -83,7 +83,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 			await _afterHooks.Run(request, ActionType.StatusAction, _logger);
 		}
 
-		return result;
+		return ProcessResult(result);
 	}
 
 	private OperationResult<bool> ProcessResult(OperationResult<bool> result)

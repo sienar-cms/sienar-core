@@ -59,7 +59,7 @@ public class ResultService<TResult> : IResultService<TResult>
 			await _afterHooks.Run(result.Result, ActionType.ResultAction, _logger);
 		}
 
-		return result;
+		return ProcessResult(result);
 	}
 
 	private OperationResult<TResult?> ProcessResult(OperationResult<TResult?> result)
