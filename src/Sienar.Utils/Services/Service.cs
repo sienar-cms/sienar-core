@@ -82,7 +82,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 			await _afterHooks.Run(request, ActionType.Action, _logger);
 		}
 
-		return result;
+		return ProcessResult(result);
 	}
 
 	private OperationResult<TResult?> ProcessResult(OperationResult<TResult?> result)
