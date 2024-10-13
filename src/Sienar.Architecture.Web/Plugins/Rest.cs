@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Net.Mime;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sienar.Infrastructure;
@@ -25,7 +28,34 @@ public class Rest : IWebPlugin
 	/// <inheritdoc />
 	public void SetupDependencies(WebApplicationBuilder builder)
 	{
-		builder.Services.AddControllers();
+		builder.Services
+			.AddControllers()
+			.ConfigureApiBehaviorOptions(o =>
+			{
+				o.InvalidModelStateResponseFactory = context =>
+				{
+					var details = new ValidationProblemDetails(context.ModelState)
+					{
+						Extensions =
+						{
+							["traceId"] = context.HttpContext.TraceIdentifier
+						}
+					};
+
+					return new UnprocessableEntityObjectResult(details)
+					{
+						ContentTypes =
+						{
+							MediaTypeNames.Application.Json,
+							MediaTypeNames.Application.Xml
+						}
+					};
+				};
+			})
+			.AddJsonOptions(o =>
+			{
+				o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+			});
 		builder.Services.AddEndpointsApiExplorer();
 		builder.Services.AddSwaggerGen();
 
