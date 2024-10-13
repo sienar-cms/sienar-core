@@ -6,8 +6,8 @@
 		<RootNamespace>Sienar</RootNamespace>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-		<PackageId>Sienar.WebPlugin</PackageId>
-		<Title>Sienar.WebPlugin</Title>
+		<PackageId>Sienar.Architecture.Web</PackageId>
+		<Title>Sienar.Architecture.Web</Title>
 		<PackageVersion>0.1.0</PackageVersion>
 		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
 		<Authors>Christian LeVesque</Authors>
