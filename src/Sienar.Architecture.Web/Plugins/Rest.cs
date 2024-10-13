@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Mime;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +51,10 @@ public class Rest : IWebPlugin
 						}
 					};
 				};
+			})
+			.AddJsonOptions(o =>
+			{
+				o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
 			});
 		builder.Services.AddEndpointsApiExplorer();
 		builder.Services.AddSwaggerGen();
