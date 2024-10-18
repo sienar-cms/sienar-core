@@ -8,7 +8,7 @@ public class WebResult<TResult>
 	/// <summary>
 	/// The result of a REST API request
 	/// </summary>
-	public required TResult Result { get; set; }
+	public TResult? Result { get; set; }
 
 	/// <summary>
 	/// Notifications generated during the request
