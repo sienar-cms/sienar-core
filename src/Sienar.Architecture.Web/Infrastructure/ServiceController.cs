@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sienar.Data;
 using Sienar.Services;
@@ -31,7 +32,7 @@ public class ServiceController : ControllerBase
 		TRequest request)
 	{
 		var result = await service.Execute(request);
-		return Ok(CreateResult(result));
+		return CreateResult(result);
 	}
 
 	/// <summary>
@@ -46,7 +47,7 @@ public class ServiceController : ControllerBase
 		TRequest request)
 	{
 		var result = await service.Execute(request);
-		return Ok(CreateResult(result));
+		return CreateResult(result);
 	}
 
 	/// <summary>
@@ -58,7 +59,7 @@ public class ServiceController : ControllerBase
 	protected async Task<IActionResult> ExecuteService<TResult>(IResultService<TResult> service)
 	{
 		var result = await service.Execute();
-		return Ok(CreateResult(result));
+		return CreateResult(result);
 	}
 
 	/// <summary>
@@ -66,12 +67,35 @@ public class ServiceController : ControllerBase
 	/// </summary>
 	/// <typeparam name="TResult">the type of the result</typeparam>
 	/// <returns>the new <see cref="WebResult{TResult}"/></returns>
-	protected WebResult<TResult> CreateResult<TResult>(OperationResult<TResult> result)
+	protected IActionResult CreateResult<TResult>(OperationResult<TResult> result)
 	{
-		return new()
+		var webResult =  new WebResult<TResult>
 		{
 			Result = result.Result,
 			Notifications = _notifier.Notifications.ToArray()
 		};
+
+		return new ObjectResult(webResult)
+		{
+			StatusCode = MapStatusCodeFromOperationStatus(result.Status)
+		};
 	}
+
+	/// <summary>
+	/// Maps a Sienar <see cref="OperationStatus"/> to an HTTP status code
+	/// </summary>
+	/// <param name="status">The status of the operation performed</param>
+	/// <returns>the HTTP status code represented by the operation status</returns>
+	protected static int MapStatusCodeFromOperationStatus(OperationStatus status)
+		=> status switch
+		{
+			OperationStatus.Success => StatusCodes.Status200OK,
+			OperationStatus.Unauthorized => StatusCodes.Status401Unauthorized,
+			OperationStatus.Forbidden => StatusCodes.Status403Forbidden,
+			OperationStatus.NotFound => StatusCodes.Status404NotFound,
+			OperationStatus.Concurrency => StatusCodes.Status409Conflict,
+			OperationStatus.Conflict => StatusCodes.Status409Conflict,
+			OperationStatus.Unprocessable => StatusCodes.Status422UnprocessableEntity,
+			_ => StatusCodes.Status500InternalServerError
+		};
 }
