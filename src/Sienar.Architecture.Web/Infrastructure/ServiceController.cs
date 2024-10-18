@@ -66,11 +66,11 @@ public class ServiceController : ControllerBase
 	/// </summary>
 	/// <typeparam name="TResult">the type of the result</typeparam>
 	/// <returns>the new <see cref="WebResult{TResult}"/></returns>
-	protected WebResult<TResult> CreateResult<TResult>(TResult result)
+	protected WebResult<TResult> CreateResult<TResult>(OperationResult<TResult> result)
 	{
 		return new()
 		{
-			Result = result,
+			Result = result.Result,
 			Notifications = _notifier.Notifications.ToArray()
 		};
 	}
