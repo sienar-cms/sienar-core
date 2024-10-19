@@ -76,36 +76,4 @@ public static class HooksExtensions
 			}
 		}
 	}
-
-	/// <summary>
-	/// Runs all state validation hooks
-	/// </summary>
-	/// <param name="stateValidators">the state validation hooks</param>
-	/// <param name="entity">the entity or request model</param>
-	/// <param name="action">the type of action for the current operation</param>
-	/// <param name="logger">the current logger</param>
-	/// <typeparam name="TEntity">the type of the entity or request</typeparam>
-	/// <returns>whether all hooks ran successfully or not</returns>
-	public static async Task<bool> Validate<TEntity>(
-		this IEnumerable<IStateValidator<TEntity>> stateValidators,
-		TEntity entity,
-		ActionType action,
-		ILogger logger)
-	{
-		try
-		{
-			var wasSuccessful = true;
-			foreach (var validator in stateValidators)
-			{
-				if (await validator.Validate(entity, action) != OperationStatus.Success) wasSuccessful = false;
-			}
-
-			return wasSuccessful;
-		}
-		catch (Exception e)
-		{
-			logger.LogError(e, "One or more state validators failed to run");
-			return false;
-		}
-	}
 }
