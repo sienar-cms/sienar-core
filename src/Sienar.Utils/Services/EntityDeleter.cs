@@ -19,7 +19,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityDeleter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
-	private readonly IEnumerable<IStateValidator<TEntity>> _stateValidators;
+	private readonly IStateValidatorService<TEntity> _stateValidator;
 	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
 
@@ -28,7 +28,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		INotificationService notifier,
 		ILogger<EntityDeleter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
-		IEnumerable<IStateValidator<TEntity>> stateValidators,
+		IStateValidatorService<TEntity> stateValidator,
 		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
 	{
@@ -36,7 +36,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		_notifier = notifier;
 		_logger = logger;
 		_accessValidator = accessValidator;
-		_stateValidators = stateValidators;
+		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 	}
@@ -68,8 +68,19 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			return false;
 		}
 
-		if (!await _stateValidators.Validate(entity, ActionType.Delete, _logger)
-			|| !await _beforeHooks.Run(entity, ActionType.Delete, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(entity, ActionType.Delete);
+		if (!stateValidationResult.Result)
+		{
+			if (!string.IsNullOrEmpty(stateValidationResult.Message))
+			{
+				_notifier.Error(stateValidationResult.Message);
+			}
+
+			return false;
+		}
+
+		if (!await _beforeHooks.Run(entity, ActionType.Delete, _logger))
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
 			return false;

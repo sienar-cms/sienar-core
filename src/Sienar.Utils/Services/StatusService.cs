@@ -17,7 +17,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 {
 	private readonly ILogger<StatusService<TRequest>> _logger;
 	private readonly IAccessValidatorService<TRequest> _accessValidator;
-	private readonly IEnumerable<IStateValidator<TRequest>> _stateValidators;
+	private readonly IStateValidatorService<TRequest> _stateValidator;
 	private readonly IEnumerable<IBeforeProcess<TRequest>> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TRequest>> _afterHooks;
 	private readonly IProcessor<TRequest, bool> _processor;
@@ -26,7 +26,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	public StatusService(
 		ILogger<StatusService<TRequest>> logger,
 		IAccessValidatorService<TRequest> accessValidator,
-		IEnumerable<IStateValidator<TRequest>> stateValidators,
+		IStateValidatorService<TRequest> stateValidator,
 		IEnumerable<IBeforeProcess<TRequest>> beforeHooks,
 		IEnumerable<IAfterProcess<TRequest>> afterHooks,
 		IProcessor<TRequest, bool> processor,
@@ -34,7 +34,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	{
 		_logger = logger;
 		_accessValidator = accessValidator;
-		_stateValidators = stateValidators;
+		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 		_processor = processor;
@@ -54,13 +54,14 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 				accessResult.Message));
 		}
 
-		if (!await _stateValidators.Validate(request, ActionType.StatusAction, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(request, ActionType.StatusAction);
+		if (!stateValidationResult.Result)
 		{
-			return ProcessResult(
-				new(
-					OperationStatus.Unprocessable,
-					false,
-					StatusMessages.Processes.InvalidState));
+			return ProcessResult(new(
+				stateValidationResult.Status,
+				false,
+				stateValidationResult.Message));
 		}
 
 		if (!await _beforeHooks.Run(request, ActionType.StatusAction, _logger))

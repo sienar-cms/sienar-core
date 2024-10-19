@@ -19,7 +19,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityWriter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
-	private readonly IEnumerable<IStateValidator<TEntity>> _stateValidators;
+	private readonly IStateValidatorService<TEntity> _stateValidator;
 	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
 
@@ -28,7 +28,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		INotificationService notifier,
 		ILogger<EntityWriter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
-		IEnumerable<IStateValidator<TEntity>> stateValidators,
+		IStateValidatorService<TEntity> stateValidator,
 		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
 	{
@@ -36,7 +36,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		_notifier = notifier;
 		_logger = logger;
 		_accessValidator = accessValidator;
-		_stateValidators = stateValidators;
+		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 	}
@@ -51,8 +51,19 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return Guid.Empty;
 		}
 
-		if (!await _stateValidators.Validate(model, ActionType.Create, _logger)
-		|| !await _beforeHooks.Run(model, ActionType.Create, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Create);
+		if (!stateValidationResult.Result)
+		{
+			if (!string.IsNullOrEmpty(stateValidationResult.Message))
+			{
+				_notifier.Error(stateValidationResult.Message);
+			}
+
+			return Guid.Empty;
+		}
+
+		if (!await _beforeHooks.Run(model, ActionType.Create, _logger))
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
 			return Guid.Empty;
@@ -84,8 +95,19 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return false;
 		}
 
-		if (!await _stateValidators.Validate(model, ActionType.Update, _logger)
-		|| !await _beforeHooks.Run(model, ActionType.Update, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Update);
+		if (!stateValidationResult.Result)
+		{
+			if (!string.IsNullOrEmpty(stateValidationResult.Message))
+			{
+				_notifier.Error(stateValidationResult.Message);
+			}
+
+			return false;
+		}
+
+		if (!await _beforeHooks.Run(model, ActionType.Update, _logger))
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
 			return false;
