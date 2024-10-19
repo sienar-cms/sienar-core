@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Sienar.Data;
 using Sienar.Hooks;
-using Sienar.Infrastructure;
 
 namespace Sienar.Services;
 
@@ -14,7 +13,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	where TEntity : EntityBase
 {
 	private readonly IRepository<TEntity> _repository;
-	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityDeleter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
@@ -23,7 +21,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 
 	public EntityDeleter(
 		IRepository<TEntity> repository,
-		INotificationService notifier,
 		ILogger<EntityDeleter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
@@ -31,7 +28,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
-		_notifier = notifier;
 		_logger = logger;
 		_accessValidator = accessValidator;
 		_stateValidator = stateValidator;
@@ -76,34 +72,20 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		var stateValidationResult = await _stateValidator.Validate(entity, ActionType.Delete);
 		if (!stateValidationResult.Result)
 		{
-			if (!string.IsNullOrEmpty(stateValidationResult.Message))
-			{
-				// Notify of this message because if it exists,
-				// the user needs to know in this case
-				_notifier.Error(stateValidationResult.Message);
-			}
-
 			return new(
 				OperationStatus.Unprocessable,
 				false,
-				StatusMessages.Crud<TEntity>.DeleteFailed());
+				stateValidationResult.Message ?? StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run before hooks
 		var beforeHooksResult = await _beforeHooks.Run(entity, ActionType.Delete);
 		if (!beforeHooksResult.Result)
 		{
-			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
-			{
-				// Notify of this message because if it exists,
-				// the user needs to know in this case
-				_notifier.Error(beforeHooksResult.Message);
-			}
-
 			return new(
 				OperationStatus.Unknown,
 				false,
-				StatusMessages.Crud<TEntity>.DeleteFailed());
+				beforeHooksResult.Message ?? StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		try
