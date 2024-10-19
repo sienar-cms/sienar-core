@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -21,7 +19,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
 	private readonly IBeforeProcessService<TEntity> _beforeHooks;
-	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
+	private readonly IAfterProcessService<TEntity> _afterHooks;
 
 	public EntityDeleter(
 		IRepository<TEntity> repository,
@@ -30,7 +28,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
 		IBeforeProcessService<TEntity> beforeHooks,
-		IEnumerable<IAfterProcess<TEntity>> afterHooks)
+		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
@@ -107,7 +105,9 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			return false;
 		}
 
-		await _afterHooks.Run(entity, ActionType.Delete, _logger);
+		// Run after hooks
+		await _afterHooks.Run(entity, ActionType.Delete);
+
 		_notifier.Success(StatusMessages.Crud<TEntity>.DeleteSuccessful());
 		return true;
 	}

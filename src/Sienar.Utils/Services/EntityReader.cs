@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -19,14 +17,14 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityReader<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
-	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
+	private readonly IAfterProcessService<TEntity> _afterHooks;
 
 	public EntityReader(
 		IRepository<TEntity> repository,
 		INotificationService notifier,
 		ILogger<EntityReader<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
-		IEnumerable<IAfterProcess<TEntity>> afterHooks)
+		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
@@ -65,7 +63,7 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 			return null;
 		}
 
-		await _afterHooks.Run(entity, ActionType.Read, _logger);
+		await _afterHooks.Run(entity, ActionType.Read);
 		return entity;
 	}
 
@@ -86,7 +84,7 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 
 		foreach (var entity in queryResult.Items)
 		{
-			await _afterHooks.Run(entity, ActionType.ReadAll, _logger);
+			await _afterHooks.Run(entity, ActionType.ReadAll);
 		}
 
 		return queryResult;

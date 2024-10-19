@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -18,14 +16,14 @@ public class ResultService<TResult> : IResultService<TResult>
 {
 	private readonly ILogger<ResultService<TResult>> _logger;
 	private readonly IAccessValidatorService<TResult> _accessValidator;
-	private readonly IEnumerable<IAfterProcess<TResult>> _afterHooks;
+	private readonly IAfterProcessService<TResult> _afterHooks;
 	private readonly IProcessor<TResult> _processor;
 	private readonly INotificationService _notifier;
 
 	public ResultService(
 		ILogger<ResultService<TResult>> logger,
 		IAccessValidatorService<TResult> accessValidator,
-		IEnumerable<IAfterProcess<TResult>> afterHooks,
+		IAfterProcessService<TResult> afterHooks,
 		IProcessor<TResult> processor,
 		INotificationService notifier)
 	{
@@ -61,7 +59,7 @@ public class ResultService<TResult> : IResultService<TResult>
 
 		if (result.Status is OperationStatus.Success && result.Result is not null)
 		{
-			await _afterHooks.Run(result.Result, ActionType.ResultAction, _logger);
+			await _afterHooks.Run(result.Result, ActionType.ResultAction);
 		}
 
 		return ProcessResult(result);

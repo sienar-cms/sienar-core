@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -21,7 +19,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
 	private readonly IBeforeProcessService<TEntity> _beforeHooks;
-	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
+	private readonly IAfterProcessService<TEntity> _afterHooks;
 
 	public EntityWriter(
 		IRepository<TEntity> repository,
@@ -30,7 +28,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
 		IBeforeProcessService<TEntity> beforeHooks,
-		IEnumerable<IAfterProcess<TEntity>> afterHooks)
+		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
@@ -87,7 +85,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return Guid.Empty;
 		}
 
-		await _afterHooks.Run(model, ActionType.Create, _logger);
+		// Run after hooks
+		await _afterHooks.Run(model, ActionType.Create);
+
 		_notifier.Success(StatusMessages.Crud<TEntity>.CreateSuccessful());
 		return model.Id;
 	}
@@ -138,7 +138,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return false;
 		}
 
-		await _afterHooks.Run(model, ActionType.Update, _logger);
+		// Run after hooks
+		await _afterHooks.Run(model, ActionType.Update);
+
 		_notifier.Success(StatusMessages.Crud<TEntity>.UpdateSuccessful());
 		return true;
 	}

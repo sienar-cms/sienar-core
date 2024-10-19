@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -19,7 +17,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 	private readonly IAccessValidatorService<TRequest> _accessValidator;
 	private readonly IStateValidatorService<TRequest> _stateValidator;
 	private readonly IBeforeProcessService<TRequest> _beforeHooks;
-	private readonly IEnumerable<IAfterProcess<TRequest>> _afterHooks;
+	private readonly IAfterProcessService<TRequest> _afterHooks;
 	private readonly IProcessor<TRequest, TResult> _processor;
 	private readonly INotificationService _notifier;
 
@@ -28,7 +26,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		IAccessValidatorService<TRequest> accessValidator,
 		IStateValidatorService<TRequest> stateValidator,
 		IBeforeProcessService<TRequest> beforeHooks,
-		IEnumerable<IAfterProcess<TRequest>> afterHooks,
+		IAfterProcessService<TRequest> afterHooks,
 		IProcessor<TRequest, TResult> processor,
 		INotificationService notifier)
 	{
@@ -86,7 +84,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 		if (result.Status is OperationStatus.Success)
 		{
-			await _afterHooks.Run(request, ActionType.Action, _logger);
+			await _afterHooks.Run(request, ActionType.Action);
 		}
 
 		return ProcessResult(result);
