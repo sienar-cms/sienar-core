@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -16,25 +14,25 @@ namespace Sienar.Services;
 public class Service<TRequest, TResult> : IService<TRequest, TResult>
 {
 	private readonly ILogger<Service<TRequest, TResult>> _logger;
-	private readonly IEnumerable<IAccessValidator<TRequest>> _accessValidators;
-	private readonly IEnumerable<IStateValidator<TRequest>> _stateValidators;
-	private readonly IEnumerable<IBeforeProcess<TRequest>> _beforeHooks;
-	private readonly IEnumerable<IAfterProcess<TRequest>> _afterHooks;
+	private readonly IAccessValidatorService<TRequest> _accessValidator;
+	private readonly IStateValidatorService<TRequest> _stateValidator;
+	private readonly IBeforeProcessService<TRequest> _beforeHooks;
+	private readonly IAfterProcessService<TRequest> _afterHooks;
 	private readonly IProcessor<TRequest, TResult> _processor;
 	private readonly INotificationService _notifier;
 
 	public Service(
 		ILogger<Service<TRequest, TResult>> logger,
-		IEnumerable<IAccessValidator<TRequest>> accessValidators,
-		IEnumerable<IStateValidator<TRequest>> stateValidators,
-		IEnumerable<IBeforeProcess<TRequest>> beforeHooks,
-		IEnumerable<IAfterProcess<TRequest>> afterHooks,
+		IAccessValidatorService<TRequest> accessValidator,
+		IStateValidatorService<TRequest> stateValidator,
+		IBeforeProcessService<TRequest> beforeHooks,
+		IAfterProcessService<TRequest> afterHooks,
 		IProcessor<TRequest, TResult> processor,
 		INotificationService notifier)
 	{
 		_logger = logger;
-		_accessValidators = accessValidators;
-		_stateValidators = stateValidators;
+		_accessValidator = accessValidator;
+		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 		_processor = processor;
@@ -43,27 +41,34 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 	public virtual async Task<OperationResult<TResult?>> Execute(TRequest request)
 	{
-		if (!await _accessValidators.Validate(request, ActionType.Action, _logger))
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(request, ActionType.Action);
+		if (!accessValidationResult.Result)
 		{
-			return ProcessResult(new(OperationStatus.Unauthorized));
+			return ProcessResult(new(
+				accessValidationResult.Status,
+				default,
+				accessValidationResult.Message));
 		}
 
-		if (!await _stateValidators.Validate(request, ActionType.Action, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(request, ActionType.Action);
+		if (!stateValidationResult.Result)
 		{
-			return ProcessResult(
-				new(
-					OperationStatus.Unprocessable,
-					default,
-					StatusMessages.Processes.InvalidState));
+			return ProcessResult(new(
+				stateValidationResult.Status,
+				default,
+				stateValidationResult.Message));
 		}
 
-		if (!await _beforeHooks.Run(request, ActionType.Action, _logger))
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(request, ActionType.Action);
+		if (!beforeHooksResult.Result)
 		{
-			return ProcessResult(
-				new(
-					OperationStatus.Unprocessable,
-					default,
-					StatusMessages.Processes.BeforeHookFailure));
+			return ProcessResult(new(
+				beforeHooksResult.Status,
+				default,
+				beforeHooksResult.Message));
 		}
 
 		OperationResult<TResult?> result;
@@ -79,7 +84,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 		if (result.Status is OperationStatus.Success)
 		{
-			await _afterHooks.Run(request, ActionType.Action, _logger);
+			await _afterHooks.Run(request, ActionType.Action);
 		}
 
 		return ProcessResult(result);

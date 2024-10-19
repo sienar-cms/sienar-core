@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -17,20 +15,20 @@ namespace Sienar.Services;
 public class ResultService<TResult> : IResultService<TResult>
 {
 	private readonly ILogger<ResultService<TResult>> _logger;
-	private readonly IEnumerable<IAccessValidator<TResult>> _accessValidators;
-	private readonly IEnumerable<IAfterProcess<TResult>> _afterHooks;
+	private readonly IAccessValidatorService<TResult> _accessValidator;
+	private readonly IAfterProcessService<TResult> _afterHooks;
 	private readonly IProcessor<TResult> _processor;
 	private readonly INotificationService _notifier;
 
 	public ResultService(
 		ILogger<ResultService<TResult>> logger,
-		IEnumerable<IAccessValidator<TResult>> accessValidators,
-		IEnumerable<IAfterProcess<TResult>> afterHooks,
+		IAccessValidatorService<TResult> accessValidator,
+		IAfterProcessService<TResult> afterHooks,
 		IProcessor<TResult> processor,
 		INotificationService notifier)
 	{
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_afterHooks = afterHooks;
 		_processor = processor;
 		_notifier = notifier;
@@ -38,9 +36,14 @@ public class ResultService<TResult> : IResultService<TResult>
 
 	public virtual async Task<OperationResult<TResult?>> Execute()
 	{
-		if (!await _accessValidators.Validate(default, ActionType.ResultAction, _logger))
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(default, ActionType.ResultAction);
+		if (!accessValidationResult.Result)
 		{
-			return ProcessResult(new(OperationStatus.Unauthorized));
+			return ProcessResult(new(
+				accessValidationResult.Status,
+				default,
+				accessValidationResult.Message));
 		}
 
 		OperationResult<TResult?> result;
@@ -56,7 +59,7 @@ public class ResultService<TResult> : IResultService<TResult>
 
 		if (result.Status is OperationStatus.Success && result.Result is not null)
 		{
-			await _afterHooks.Run(result.Result, ActionType.ResultAction, _logger);
+			await _afterHooks.Run(result.Result, ActionType.ResultAction);
 		}
 
 		return ProcessResult(result);

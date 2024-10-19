@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -18,20 +16,20 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 	private readonly IRepository<TEntity> _repository;
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityReader<TEntity>> _logger;
-	private readonly IEnumerable<IAccessValidator<TEntity>> _accessValidators;
-	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
+	private readonly IAccessValidatorService<TEntity> _accessValidator;
+	private readonly IAfterProcessService<TEntity> _afterHooks;
 
 	public EntityReader(
 		IRepository<TEntity> repository,
 		INotificationService notifier,
 		ILogger<EntityReader<TEntity>> logger,
-		IEnumerable<IAccessValidator<TEntity>> accessValidators,
-		IEnumerable<IAfterProcess<TEntity>> afterHooks)
+		IAccessValidatorService<TEntity> accessValidator,
+		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_afterHooks = afterHooks;
 	}
 
@@ -57,13 +55,15 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 			return null;
 		}
 
-		if (!await _accessValidators.Validate(entity, ActionType.Read, _logger))
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(entity, ActionType.Read);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return null;
 		}
 
-		await _afterHooks.Run(entity, ActionType.Read, _logger);
+		await _afterHooks.Run(entity, ActionType.Read);
 		return entity;
 	}
 
@@ -84,7 +84,7 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 
 		foreach (var entity in queryResult.Items)
 		{
-			await _afterHooks.Run(entity, ActionType.ReadAll, _logger);
+			await _afterHooks.Run(entity, ActionType.ReadAll);
 		}
 
 		return queryResult;

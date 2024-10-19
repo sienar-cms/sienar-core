@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Sienar.Extensions;
 using Sienar.Data;
 using Sienar.Hooks;
 using Sienar.Infrastructure;
@@ -18,40 +16,67 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	private readonly IRepository<TEntity> _repository;
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityWriter<TEntity>> _logger;
-	private readonly IEnumerable<IAccessValidator<TEntity>> _accessValidators;
-	private readonly IEnumerable<IStateValidator<TEntity>> _stateValidators;
-	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
-	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
+	private readonly IAccessValidatorService<TEntity> _accessValidator;
+	private readonly IStateValidatorService<TEntity> _stateValidator;
+	private readonly IBeforeProcessService<TEntity> _beforeHooks;
+	private readonly IAfterProcessService<TEntity> _afterHooks;
 
 	public EntityWriter(
 		IRepository<TEntity> repository,
 		INotificationService notifier,
 		ILogger<EntityWriter<TEntity>> logger,
-		IEnumerable<IAccessValidator<TEntity>> accessValidators,
-		IEnumerable<IStateValidator<TEntity>> stateValidators,
-		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
-		IEnumerable<IAfterProcess<TEntity>> afterHooks)
+		IAccessValidatorService<TEntity> accessValidator,
+		IStateValidatorService<TEntity> stateValidator,
+		IBeforeProcessService<TEntity> beforeHooks,
+		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
 		_logger = logger;
-		_accessValidators = accessValidators;
-		_stateValidators = stateValidators;
+		_accessValidator = accessValidator;
+		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 	}
 
 	public async Task<Guid> Create(TEntity model)
 	{
-		if (!await _accessValidators.Validate(model, ActionType.Create, _logger))
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Create);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return Guid.Empty;
 		}
 
-		if (!await _stateValidators.Validate(model, ActionType.Create, _logger)
-		|| !await _beforeHooks.Run(model, ActionType.Create, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Create);
+		if (!stateValidationResult.Result)
 		{
+			if (!string.IsNullOrEmpty(stateValidationResult.Message))
+			{
+				_notifier.Error(stateValidationResult.Message);
+			}
+
+			// Notify of failure regardless
+			// The user may not correctly infer that creation failed
+			// based on whatever message was provided in the previous statement
+			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
+			return Guid.Empty;
+		}
+
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Create);
+		if (!beforeHooksResult.Result)
+		{
+			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
+			{
+				_notifier.Error(beforeHooksResult.Message);
+			}
+
+			// Notify of failure regardless
+			// The user may not correctly infer that creation failed
+			// based on whatever message was provided in the previous statement
 			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
 			return Guid.Empty;
 		}
@@ -67,22 +92,51 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return Guid.Empty;
 		}
 
-		await _afterHooks.Run(model, ActionType.Create, _logger);
+		// Run after hooks
+		await _afterHooks.Run(model, ActionType.Create);
+
 		_notifier.Success(StatusMessages.Crud<TEntity>.CreateSuccessful());
 		return model.Id;
 	}
 
 	public async Task<bool> Update(TEntity model)
 	{
-		if (!await _accessValidators.Validate(model, ActionType.Update, _logger))
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Update);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return false;
 		}
 
-		if (!await _stateValidators.Validate(model, ActionType.Update, _logger)
-		|| !await _beforeHooks.Run(model, ActionType.Update, _logger))
+		// Run state validation
+		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Update);
+		if (!stateValidationResult.Result)
 		{
+			if (!string.IsNullOrEmpty(stateValidationResult.Message))
+			{
+				_notifier.Error(stateValidationResult.Message);
+			}
+
+			// Notify of failure regardless
+			// The user may not correctly infer that update failed
+			// based on whatever message was provided in the previous statement
+			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
+			return false;
+		}
+
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Update);
+		if (!beforeHooksResult.Result)
+		{
+			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
+			{
+				_notifier.Error(beforeHooksResult.Message);
+			}
+
+			// Notify of failure regardless
+			// The user may not correctly infer that update failed
+			// based on whatever message was provided in the previous statement
 			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
 			return false;
 		}
@@ -98,7 +152,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return false;
 		}
 
-		await _afterHooks.Run(model, ActionType.Update, _logger);
+		// Run after hooks
+		await _afterHooks.Run(model, ActionType.Update);
+
 		_notifier.Success(StatusMessages.Crud<TEntity>.UpdateSuccessful());
 		return true;
 	}
