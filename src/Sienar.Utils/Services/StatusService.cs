@@ -43,36 +43,26 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	public virtual async Task<OperationResult<bool>> Execute(TRequest request)
 	{
 		// Run access validation
-		var accessValidationResult = await _accessValidator.Validate(request, ActionType.StatusAction);
-		if (!accessValidationResult.Result)
+		var result = await _accessValidator.Validate(request, ActionType.StatusAction);
+		if (!result.Result)
 		{
-			return ProcessResult(new(
-				accessValidationResult.Status,
-				default,
-				accessValidationResult.Message));
+			return ProcessResult(result);
 		}
 
 		// Run state validation
-		var stateValidationResult = await _stateValidator.Validate(request, ActionType.StatusAction);
-		if (!stateValidationResult.Result)
+		result = await _stateValidator.Validate(request, ActionType.StatusAction);
+		if (!result.Result)
 		{
-			return ProcessResult(new(
-				stateValidationResult.Status,
-				false,
-				stateValidationResult.Message));
+			return ProcessResult(result);
 		}
 
 		// Run before hooks
-		var beforeHooksResult = await _beforeHooks.Run(request, ActionType.StatusAction);
-		if (!beforeHooksResult.Result)
+		result = await _beforeHooks.Run(request, ActionType.StatusAction);
+		if (!result.Result)
 		{
-			return ProcessResult(new(
-				beforeHooksResult.Status,
-				false,
-				beforeHooksResult.Message));
+			return ProcessResult(result);
 		}
 
-		OperationResult<bool> result;
 		try
 		{
 			result = await _processor.Process(request);
