@@ -47,7 +47,6 @@ public class OperationResultMapper : IOperationResultMapper
 		{
 			OperationStatus.Success => StatusCodes.Status200OK,
 			OperationStatus.Unauthorized => StatusCodes.Status401Unauthorized,
-			OperationStatus.Forbidden => StatusCodes.Status403Forbidden,
 			OperationStatus.NotFound => StatusCodes.Status404NotFound,
 			OperationStatus.Concurrency => StatusCodes.Status409Conflict,
 			OperationStatus.Conflict => StatusCodes.Status409Conflict,

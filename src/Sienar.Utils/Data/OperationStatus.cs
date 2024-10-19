@@ -16,14 +16,9 @@ public enum OperationStatus
 	NotFound,
 
 	/// <summary>
-	/// Indicates that the operation failed because the user was not logged in
+	/// Indicates that the operation failed because the user lacks permissions
 	/// </summary>
 	Unauthorized,
-
-	/// <summary>
-	/// Indicates that the operation failed because the user was not allowed to perform the operation
-	/// </summary>
-	Forbidden,
 
 	/// <summary>
 	/// Indicates that the operation failed due to the entity or request state
