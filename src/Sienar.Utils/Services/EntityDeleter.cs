@@ -75,6 +75,10 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 				_notifier.Error(stateValidationResult.Message);
 			}
 
+			// Notify of failure regardless
+			// The user may not correctly infer that deletion failed
+			// based on whatever message was provided in the previous statement
+			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
 			return false;
 		}
 

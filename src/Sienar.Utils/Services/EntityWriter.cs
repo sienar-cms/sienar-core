@@ -58,6 +58,10 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 				_notifier.Error(stateValidationResult.Message);
 			}
 
+			// Notify of failure regardless
+			// The user may not correctly infer that creation failed
+			// based on whatever message was provided in the previous statement
+			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
 			return Guid.Empty;
 		}
 
@@ -70,6 +74,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 				_notifier.Error(beforeHooksResult.Message);
 			}
 
+			// Notify of failure regardless
+			// The user may not correctly infer that creation failed
+			// based on whatever message was provided in the previous statement
 			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
 			return Guid.Empty;
 		}
@@ -111,6 +118,10 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 				_notifier.Error(stateValidationResult.Message);
 			}
 
+			// Notify of failure regardless
+			// The user may not correctly infer that update failed
+			// based on whatever message was provided in the previous statement
+			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
 			return false;
 		}
 
@@ -123,6 +134,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 				_notifier.Error(beforeHooksResult.Message);
 			}
 
+			// Notify of failure regardless
+			// The user may not correctly infer that update failed
+			// based on whatever message was provided in the previous statement
 			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
 			return false;
 		}
