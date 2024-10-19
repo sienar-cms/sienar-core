@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -7,13 +9,12 @@ using Sienar.Hooks;
 
 namespace Sienar.Services;
 
-/// <inheritdoc />
+/// <exclude />
 public class StateValidatorService<T> : IStateValidatorService<T>
 {
 	private readonly IEnumerable<IStateValidator<T>> _validators;
 	private readonly ILogger<IStateValidatorService<T>> _logger;
 
-	/// <exclude />
 	public StateValidatorService(
 		IEnumerable<IStateValidator<T>> validators,
 		ILogger<IStateValidatorService<T>> logger)
@@ -22,7 +23,6 @@ public class StateValidatorService<T> : IStateValidatorService<T>
 		_logger = logger;
 	}
 
-	/// <inheritdoc />
 	public async Task<OperationResult<bool>> Validate(
 		T input,
 		ActionType action)

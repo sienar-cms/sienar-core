@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -7,13 +9,12 @@ using Sienar.Hooks;
 
 namespace Sienar.Services;
 
-/// <inheritdoc />
+/// <exclude />
 public class BeforeProcessService<T> : IBeforeProcessService<T>
 {
 	private readonly IEnumerable<IBeforeProcess<T>> _hooks;
 	private readonly ILogger<IBeforeProcessService<T>> _logger;
 
-	/// <exclude />
 	public BeforeProcessService(
 		IEnumerable<IBeforeProcess<T>> hooks,
 		ILogger<IBeforeProcessService<T>> logger)
@@ -22,7 +23,6 @@ public class BeforeProcessService<T> : IBeforeProcessService<T>
 		_logger = logger;
 	}
 
-	/// <inheritdoc />
 	public async Task<OperationResult<bool>> Run(
 		T input,
 		ActionType action)
