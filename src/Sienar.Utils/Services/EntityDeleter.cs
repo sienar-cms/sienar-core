@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Sienar.Data;
 using Sienar.Hooks;
-using Sienar.Infrastructure;
 
 namespace Sienar.Services;
 
@@ -14,7 +13,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	where TEntity : EntityBase
 {
 	private readonly IRepository<TEntity> _repository;
-	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityDeleter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
@@ -23,7 +21,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 
 	public EntityDeleter(
 		IRepository<TEntity> repository,
-		INotificationService notifier,
 		ILogger<EntityDeleter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
@@ -31,7 +28,6 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
-		_notifier = notifier;
 		_logger = logger;
 		_accessValidator = accessValidator;
 		_stateValidator = stateValidator;
@@ -39,7 +35,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		_afterHooks = afterHooks;
 	}
 
-	public async Task<bool> Delete(Guid id)
+	public async Task<OperationResult<bool>> Delete(Guid id)
 	{
 		TEntity? entity;
 		try
@@ -47,55 +43,49 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			entity = await _repository.Read(id);
 			if (entity is null)
 			{
-				_notifier.Error(StatusMessages.Crud<TEntity>.NotFound(id));
-				return false;
+				return new(
+					OperationStatus.NotFound,
+					false,
+					StatusMessages.Crud<TEntity>.NotFound(id));
 			}
 		}
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(entity, ActionType.Delete);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return false;
+			return new(
+				OperationStatus.Unauthorized,
+				false,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
 		var stateValidationResult = await _stateValidator.Validate(entity, ActionType.Delete);
 		if (!stateValidationResult.Result)
 		{
-			if (!string.IsNullOrEmpty(stateValidationResult.Message))
-			{
-				_notifier.Error(stateValidationResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that deletion failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unprocessable,
+				false,
+				stateValidationResult.Message ?? StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run before hooks
 		var beforeHooksResult = await _beforeHooks.Run(entity, ActionType.Delete);
 		if (!beforeHooksResult.Result)
 		{
-			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
-			{
-				_notifier.Error(beforeHooksResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that deletion failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				beforeHooksResult.Message ?? StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		try
@@ -105,14 +95,18 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(entity, ActionType.Delete);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.DeleteSuccessful());
-		return true;
+		return new(
+			OperationStatus.Success,
+			true,
+			StatusMessages.Crud<TEntity>.DeleteSuccessful());
 	}
 }

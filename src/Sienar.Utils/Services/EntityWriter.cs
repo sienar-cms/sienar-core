@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Sienar.Data;
 using Sienar.Hooks;
-using Sienar.Infrastructure;
 
 namespace Sienar.Services;
 
@@ -14,7 +13,6 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	where TEntity : EntityBase
 {
 	private readonly IRepository<TEntity> _repository;
-	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityWriter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
@@ -23,7 +21,6 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 
 	public EntityWriter(
 		IRepository<TEntity> repository,
-		INotificationService notifier,
 		ILogger<EntityWriter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
@@ -31,7 +28,6 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		IAfterProcessService<TEntity> afterHooks)
 	{
 		_repository = repository;
-		_notifier = notifier;
 		_logger = logger;
 		_accessValidator = accessValidator;
 		_stateValidator = stateValidator;
@@ -39,46 +35,36 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		_afterHooks = afterHooks;
 	}
 
-	public async Task<Guid> Create(TEntity model)
+	public async Task<OperationResult<Guid>> Create(TEntity model)
 	{
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Create);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unauthorized,
+				default,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
 		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Create);
 		if (!stateValidationResult.Result)
 		{
-			if (!string.IsNullOrEmpty(stateValidationResult.Message))
-			{
-				_notifier.Error(stateValidationResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that creation failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unprocessable,
+				default,
+				stateValidationResult.Message ?? StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		// Run before hooks
 		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Create);
 		if (!beforeHooksResult.Result)
 		{
-			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
-			{
-				_notifier.Error(beforeHooksResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that creation failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unknown,
+				default,
+				beforeHooksResult.Message ?? StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		try
@@ -88,57 +74,51 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unknown,
+				default,
+				StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(model, ActionType.Create);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.CreateSuccessful());
-		return model.Id;
+		return new(
+			OperationStatus.Success,
+			model.Id,
+			StatusMessages.Crud<TEntity>.CreateSuccessful());
 	}
 
-	public async Task<bool> Update(TEntity model)
+	public async Task<OperationResult<bool>> Update(TEntity model)
 	{
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Update);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return false;
+			return new(
+				OperationStatus.Unauthorized,
+				false,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
 		var stateValidationResult = await _stateValidator.Validate(model, ActionType.Update);
 		if (!stateValidationResult.Result)
 		{
-			if (!string.IsNullOrEmpty(stateValidationResult.Message))
-			{
-				_notifier.Error(stateValidationResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that update failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unprocessable,
+				false,
+				stateValidationResult.Message ?? StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		// Run before hooks
 		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Update);
 		if (!beforeHooksResult.Result)
 		{
-			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
-			{
-				_notifier.Error(beforeHooksResult.Message);
-			}
-
-			// Notify of failure regardless
-			// The user may not correctly infer that update failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				beforeHooksResult.Message ?? StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		try
@@ -148,14 +128,18 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(model, ActionType.Update);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.UpdateSuccessful());
-		return true;
+		return new(
+			OperationStatus.Success,
+			true,
+			StatusMessages.Crud<TEntity>.UpdateSuccessful());
 	}
 }
