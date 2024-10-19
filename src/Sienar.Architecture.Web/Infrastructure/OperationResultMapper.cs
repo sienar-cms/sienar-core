@@ -10,10 +10,14 @@ namespace Sienar.Infrastructure;
 public class OperationResultMapper : IOperationResultMapper
 {
 	private readonly IReadableNotificationService _notifier;
+	private readonly IHttpContextAccessor _contextAccessor;
 
-	public OperationResultMapper(IReadableNotificationService notifier)
+	public OperationResultMapper(
+		IReadableNotificationService notifier,
+		IHttpContextAccessor contextAccessor)
 	{
 		_notifier = notifier;
+		_contextAccessor = contextAccessor;
 	}
 
 	public ObjectResult MapToObjectResult<T>(OperationResult<T> result)
@@ -42,12 +46,13 @@ public class OperationResultMapper : IOperationResultMapper
 		};
 	}
 
-	private static int MapStatusCodeFromOperationStatus(OperationStatus status)
+	private int MapStatusCodeFromOperationStatus(OperationStatus status)
 		=> status switch
 		{
 			OperationStatus.Success => StatusCodes.Status200OK,
-			OperationStatus.Unauthorized => StatusCodes.Status401Unauthorized,
-			OperationStatus.Forbidden => StatusCodes.Status403Forbidden,
+			OperationStatus.Unauthorized => _contextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false
+				? StatusCodes.Status403Forbidden
+				: StatusCodes.Status401Unauthorized,
 			OperationStatus.NotFound => StatusCodes.Status404NotFound,
 			OperationStatus.Concurrency => StatusCodes.Status409Conflict,
 			OperationStatus.Conflict => StatusCodes.Status409Conflict,
