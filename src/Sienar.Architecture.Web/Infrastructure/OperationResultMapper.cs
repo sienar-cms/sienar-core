@@ -9,19 +9,31 @@ namespace Sienar.Infrastructure;
 /// <exclude />
 public class OperationResultMapper : IOperationResultMapper
 {
-	private readonly IReadableNotificationService _notifications;
+	private readonly IReadableNotificationService _notifier;
 
-	public OperationResultMapper(IReadableNotificationService notifications)
+	public OperationResultMapper(IReadableNotificationService notifier)
 	{
-		_notifications = notifications;
+		_notifier = notifier;
 	}
 
 	public ObjectResult MapToObjectResult<T>(OperationResult<T> result)
 	{
+		if (!string.IsNullOrEmpty(result.Message))
+		{
+			if (result.Status is OperationStatus.Success)
+			{
+				_notifier.Success(result.Message);
+			}
+			else
+			{
+				_notifier.Error(result.Message);
+			}
+		}
+
 		var webResult = new WebResult<T>
 		{
 			Result = result.Result,
-			Notifications = _notifications.Notifications.ToArray()
+			Notifications = _notifier.Notifications.ToArray()
 		};
 
 		return new ObjectResult(webResult)
