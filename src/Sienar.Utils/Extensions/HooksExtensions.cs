@@ -14,40 +14,6 @@ namespace Sienar.Extensions;
 public static class HooksExtensions
 {
 	/// <summary>
-	/// Runs all before-process hooks
-	/// </summary>
-	/// <param name="beforeHooks">the before-process hooks</param>
-	/// <param name="entity">the entity or request model</param>
-	/// <param name="action">the type of action for the current operation</param>
-	/// <param name="logger">the current logger</param>
-	/// <typeparam name="TEntity">the type of the entity or request</typeparam>
-	/// <returns>whether all hooks ran successfully or not</returns>
-	public static async Task<bool> Run<TEntity>(
-		this IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
-		TEntity entity,
-		ActionType action,
-		ILogger logger)
-	{
-		try
-		{
-			foreach (var beforeHook in beforeHooks)
-			{
-				await beforeHook.Handle(entity, action);
-			}
-		}
-		catch (Exception e)
-		{
-			logger.LogError(
-				e,
-				"One or more before {action} hooks failed to run",
-				action);
-			return false;
-		}
-
-		return true;
-	}
-
-	/// <summary>
 	/// Runs all after-process hooks
 	/// </summary>
 	/// <param name="afterHooks">the after-process hooks</param>
