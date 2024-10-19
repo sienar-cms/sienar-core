@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Sienar.Data;
 
 namespace Sienar.Services;
 
@@ -15,12 +16,12 @@ public interface IEntityWriter<TEntity>
 	/// </summary>
 	/// <param name="model">The entity to create</param>
 	/// <returns>the <see cref="Guid"/> representing the entity's primary key</returns>
-	Task<Guid> Create(TEntity model);
+	Task<OperationResult<Guid>> Create(TEntity model);
 
 	/// <summary>
 	/// Updates an existing entity in the database
 	/// </summary>
 	/// <param name="model">The entity to update</param>
 	/// <returns>whether the edit operation was successful</returns>
-	Task<bool> Update(TEntity model);
+	Task<OperationResult<bool>> Update(TEntity model);
 }
