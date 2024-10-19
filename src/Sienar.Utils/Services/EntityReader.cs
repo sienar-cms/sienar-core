@@ -18,20 +18,20 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 	private readonly IRepository<TEntity> _repository;
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityReader<TEntity>> _logger;
-	private readonly IEnumerable<IAccessValidator<TEntity>> _accessValidators;
+	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
 
 	public EntityReader(
 		IRepository<TEntity> repository,
 		INotificationService notifier,
 		ILogger<EntityReader<TEntity>> logger,
-		IEnumerable<IAccessValidator<TEntity>> accessValidators,
+		IAccessValidatorService<TEntity> accessValidator,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
 	{
 		_repository = repository;
 		_notifier = notifier;
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_afterHooks = afterHooks;
 	}
 
@@ -57,7 +57,9 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 			return null;
 		}
 
-		if (!await _accessValidators.Validate(entity, ActionType.Read, _logger))
+		// Run access validation
+		var accessResult = await _accessValidator.Validate(entity, ActionType.Read);
+		if (!accessResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return null;

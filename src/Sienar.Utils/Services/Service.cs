@@ -16,7 +16,7 @@ namespace Sienar.Services;
 public class Service<TRequest, TResult> : IService<TRequest, TResult>
 {
 	private readonly ILogger<Service<TRequest, TResult>> _logger;
-	private readonly IEnumerable<IAccessValidator<TRequest>> _accessValidators;
+	private readonly IAccessValidatorService<TRequest> _accessValidator;
 	private readonly IEnumerable<IStateValidator<TRequest>> _stateValidators;
 	private readonly IEnumerable<IBeforeProcess<TRequest>> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TRequest>> _afterHooks;
@@ -25,7 +25,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 	public Service(
 		ILogger<Service<TRequest, TResult>> logger,
-		IEnumerable<IAccessValidator<TRequest>> accessValidators,
+		IAccessValidatorService<TRequest> accessValidator,
 		IEnumerable<IStateValidator<TRequest>> stateValidators,
 		IEnumerable<IBeforeProcess<TRequest>> beforeHooks,
 		IEnumerable<IAfterProcess<TRequest>> afterHooks,
@@ -33,7 +33,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		INotificationService notifier)
 	{
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_stateValidators = stateValidators;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
@@ -43,9 +43,14 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 	public virtual async Task<OperationResult<TResult?>> Execute(TRequest request)
 	{
-		if (!await _accessValidators.Validate(request, ActionType.Action, _logger))
+		// Run access validation
+		var accessResult = await _accessValidator.Validate(request, ActionType.Action);
+		if (!accessResult.Result)
 		{
-			return ProcessResult(new(OperationStatus.Unauthorized));
+			return ProcessResult(new(
+				accessResult.Status,
+				default,
+				accessResult.Message));
 		}
 
 		if (!await _stateValidators.Validate(request, ActionType.Action, _logger))

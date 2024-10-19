@@ -17,20 +17,20 @@ namespace Sienar.Services;
 public class ResultService<TResult> : IResultService<TResult>
 {
 	private readonly ILogger<ResultService<TResult>> _logger;
-	private readonly IEnumerable<IAccessValidator<TResult>> _accessValidators;
+	private readonly IAccessValidatorService<TResult> _accessValidator;
 	private readonly IEnumerable<IAfterProcess<TResult>> _afterHooks;
 	private readonly IProcessor<TResult> _processor;
 	private readonly INotificationService _notifier;
 
 	public ResultService(
 		ILogger<ResultService<TResult>> logger,
-		IEnumerable<IAccessValidator<TResult>> accessValidators,
+		IAccessValidatorService<TResult> accessValidator,
 		IEnumerable<IAfterProcess<TResult>> afterHooks,
 		IProcessor<TResult> processor,
 		INotificationService notifier)
 	{
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_afterHooks = afterHooks;
 		_processor = processor;
 		_notifier = notifier;
@@ -38,9 +38,14 @@ public class ResultService<TResult> : IResultService<TResult>
 
 	public virtual async Task<OperationResult<TResult?>> Execute()
 	{
-		if (!await _accessValidators.Validate(default, ActionType.ResultAction, _logger))
+		// Run access validation
+		var accessResult = await _accessValidator.Validate(default, ActionType.ResultAction);
+		if (!accessResult.Result)
 		{
-			return ProcessResult(new(OperationStatus.Unauthorized));
+			return ProcessResult(new(
+				accessResult.Status,
+				default,
+				accessResult.Message));
 		}
 
 		OperationResult<TResult?> result;

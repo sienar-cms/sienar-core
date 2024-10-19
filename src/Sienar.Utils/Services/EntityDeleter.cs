@@ -18,7 +18,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	private readonly IRepository<TEntity> _repository;
 	private readonly INotificationService _notifier;
 	private readonly ILogger<EntityDeleter<TEntity>> _logger;
-	private readonly IEnumerable<IAccessValidator<TEntity>> _accessValidators;
+	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IEnumerable<IStateValidator<TEntity>> _stateValidators;
 	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
@@ -27,7 +27,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		IRepository<TEntity> repository,
 		INotificationService notifier,
 		ILogger<EntityDeleter<TEntity>> logger,
-		IEnumerable<IAccessValidator<TEntity>> accessValidators,
+		IAccessValidatorService<TEntity> accessValidator,
 		IEnumerable<IStateValidator<TEntity>> stateValidators,
 		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
@@ -35,7 +35,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		_repository = repository;
 		_notifier = notifier;
 		_logger = logger;
-		_accessValidators = accessValidators;
+		_accessValidator = accessValidator;
 		_stateValidators = stateValidators;
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
@@ -60,7 +60,9 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			return false;
 		}
 
-		if (!await _accessValidators.Validate(entity, ActionType.Delete, _logger))
+		// Run access validation
+		var accessResult = await _accessValidator.Validate(entity, ActionType.Delete);
+		if (!accessResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return false;
