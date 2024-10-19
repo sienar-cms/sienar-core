@@ -19,7 +19,7 @@ public class OperationResult<TResult>
 	/// <summary>
 	/// The status message from the operation
 	/// </summary>
-	public readonly string Message;
+	public readonly string? Message;
 
 	/// <summary>
 	/// Creates a new instance of <c>OperationResult&lt;TResult&gt;</c>
@@ -34,19 +34,6 @@ public class OperationResult<TResult>
 	{
 		Status = status;
 		Result = result;
-		Message = message ?? CreateDefaultMessage(status);
+		Message = message;
 	}
-
-	private static string CreateDefaultMessage(
-		OperationStatus status) => status switch
-	{
-		OperationStatus.Success => StatusMessages.General.Successful,
-		OperationStatus.NotFound => StatusMessages.General.NotFound,
-		OperationStatus.Unauthorized => StatusMessages.General.Unauthorized,
-		OperationStatus.Forbidden => StatusMessages.General.Forbidden,
-		OperationStatus.Unprocessable => StatusMessages.General.Unprocessable,
-		OperationStatus.Conflict => StatusMessages.General.Conflict,
-		OperationStatus.Concurrency => StatusMessages.General.Concurrency,
-		_ => StatusMessages.General.Unknown
-	};
 }
