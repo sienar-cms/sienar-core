@@ -61,8 +61,8 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		}
 
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(entity, ActionType.Delete);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(entity, ActionType.Delete);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return false;

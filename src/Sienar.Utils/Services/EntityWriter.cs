@@ -44,8 +44,8 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	public async Task<Guid> Create(TEntity model)
 	{
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(model, ActionType.Create);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Create);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return Guid.Empty;
@@ -87,9 +87,9 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 
 	public async Task<bool> Update(TEntity model)
 	{
-		var accessResult = await _accessValidator.Validate(model, ActionType.Update);
-
-		if (!accessResult.Result)
+		// Run access validation
+		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Update);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return false;

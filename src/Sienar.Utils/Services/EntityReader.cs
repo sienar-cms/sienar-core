@@ -58,8 +58,8 @@ public class EntityReader<TEntity> : IEntityReader<TEntity>
 		}
 
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(entity, ActionType.Read);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(entity, ActionType.Read);
+		if (!accessValidationResult.Result)
 		{
 			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
 			return null;

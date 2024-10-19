@@ -45,13 +45,13 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	public virtual async Task<OperationResult<bool>> Execute(TRequest request)
 	{
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(request, ActionType.StatusAction);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(request, ActionType.StatusAction);
+		if (!accessValidationResult.Result)
 		{
 			return ProcessResult(new(
-				accessResult.Status,
+				accessValidationResult.Status,
 				default,
-				accessResult.Message));
+				accessValidationResult.Message));
 		}
 
 		// Run state validation

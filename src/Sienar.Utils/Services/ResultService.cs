@@ -39,13 +39,13 @@ public class ResultService<TResult> : IResultService<TResult>
 	public virtual async Task<OperationResult<TResult?>> Execute()
 	{
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(default, ActionType.ResultAction);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(default, ActionType.ResultAction);
+		if (!accessValidationResult.Result)
 		{
 			return ProcessResult(new(
-				accessResult.Status,
+				accessValidationResult.Status,
 				default,
-				accessResult.Message));
+				accessValidationResult.Message));
 		}
 
 		OperationResult<TResult?> result;

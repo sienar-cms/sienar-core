@@ -44,13 +44,13 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 	public virtual async Task<OperationResult<TResult?>> Execute(TRequest request)
 	{
 		// Run access validation
-		var accessResult = await _accessValidator.Validate(request, ActionType.Action);
-		if (!accessResult.Result)
+		var accessValidationResult = await _accessValidator.Validate(request, ActionType.Action);
+		if (!accessValidationResult.Result)
 		{
 			return ProcessResult(new(
-				accessResult.Status,
+				accessValidationResult.Status,
 				default,
-				accessResult.Message));
+				accessValidationResult.Message));
 		}
 
 		// Run state validation
