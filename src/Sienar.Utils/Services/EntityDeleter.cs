@@ -20,7 +20,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 	private readonly ILogger<EntityDeleter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
-	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
+	private readonly IBeforeProcessService<TEntity> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
 
 	public EntityDeleter(
@@ -29,7 +29,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		ILogger<EntityDeleter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
-		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
+		IBeforeProcessService<TEntity> beforeHooks,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
 	{
 		_repository = repository;
@@ -80,8 +80,18 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			return false;
 		}
 
-		if (!await _beforeHooks.Run(entity, ActionType.Delete, _logger))
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(entity, ActionType.Delete);
+		if (!beforeHooksResult.Result)
 		{
+			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
+			{
+				_notifier.Error(beforeHooksResult.Message);
+			}
+
+			// Notify of failure regardless
+			// The user may not correctly infer that deletion failed
+			// based on whatever message was provided in the previous statement
 			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
 			return false;
 		}

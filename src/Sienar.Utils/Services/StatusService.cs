@@ -18,7 +18,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	private readonly ILogger<StatusService<TRequest>> _logger;
 	private readonly IAccessValidatorService<TRequest> _accessValidator;
 	private readonly IStateValidatorService<TRequest> _stateValidator;
-	private readonly IEnumerable<IBeforeProcess<TRequest>> _beforeHooks;
+	private readonly IBeforeProcessService<TRequest> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TRequest>> _afterHooks;
 	private readonly IProcessor<TRequest, bool> _processor;
 	private readonly INotificationService _notifier;
@@ -27,7 +27,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 		ILogger<StatusService<TRequest>> logger,
 		IAccessValidatorService<TRequest> accessValidator,
 		IStateValidatorService<TRequest> stateValidator,
-		IEnumerable<IBeforeProcess<TRequest>> beforeHooks,
+		IBeforeProcessService<TRequest> beforeHooks,
 		IEnumerable<IAfterProcess<TRequest>> afterHooks,
 		IProcessor<TRequest, bool> processor,
 		INotificationService notifier)
@@ -64,13 +64,14 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 				stateValidationResult.Message));
 		}
 
-		if (!await _beforeHooks.Run(request, ActionType.StatusAction, _logger))
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(request, ActionType.StatusAction);
+		if (!beforeHooksResult.Result)
 		{
-			return ProcessResult(
-				new(
-					OperationStatus.Unprocessable,
-					false,
-					StatusMessages.Processes.BeforeHookFailure));
+			return ProcessResult(new(
+				beforeHooksResult.Status,
+				false,
+				beforeHooksResult.Message));
 		}
 
 		OperationResult<bool> result;

@@ -20,7 +20,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 	private readonly ILogger<EntityWriter<TEntity>> _logger;
 	private readonly IAccessValidatorService<TEntity> _accessValidator;
 	private readonly IStateValidatorService<TEntity> _stateValidator;
-	private readonly IEnumerable<IBeforeProcess<TEntity>> _beforeHooks;
+	private readonly IBeforeProcessService<TEntity> _beforeHooks;
 	private readonly IEnumerable<IAfterProcess<TEntity>> _afterHooks;
 
 	public EntityWriter(
@@ -29,7 +29,7 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		ILogger<EntityWriter<TEntity>> logger,
 		IAccessValidatorService<TEntity> accessValidator,
 		IStateValidatorService<TEntity> stateValidator,
-		IEnumerable<IBeforeProcess<TEntity>> beforeHooks,
+		IBeforeProcessService<TEntity> beforeHooks,
 		IEnumerable<IAfterProcess<TEntity>> afterHooks)
 	{
 		_repository = repository;
@@ -63,8 +63,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return Guid.Empty;
 		}
 
-		if (!await _beforeHooks.Run(model, ActionType.Create, _logger))
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Create);
+		if (!beforeHooksResult.Result)
 		{
+			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
+			{
+				_notifier.Error(beforeHooksResult.Message);
+			}
+
 			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
 			return Guid.Empty;
 		}
@@ -107,8 +114,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 			return false;
 		}
 
-		if (!await _beforeHooks.Run(model, ActionType.Update, _logger))
+		// Run before hooks
+		var beforeHooksResult = await _beforeHooks.Run(model, ActionType.Update);
+		if (!beforeHooksResult.Result)
 		{
+			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
+			{
+				_notifier.Error(beforeHooksResult.Message);
+			}
+
 			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
 			return false;
 		}
