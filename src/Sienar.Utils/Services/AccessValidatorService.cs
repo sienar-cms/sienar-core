@@ -11,8 +11,8 @@ namespace Sienar.Services;
 /// <inheritdoc />
 public class AccessValidatorService<T> : IAccessValidatorService<T>
 {
-	private IEnumerable<IAccessValidator<T>> _validators;
-	private ILogger<IAccessValidatorService<T>> _logger;
+	private readonly IEnumerable<IAccessValidator<T>> _validators;
+	private readonly ILogger<IAccessValidatorService<T>> _logger;
 
 	/// <exclude />
 	public AccessValidatorService(
