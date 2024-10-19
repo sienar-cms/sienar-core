@@ -108,39 +108,4 @@ public static class HooksExtensions
 			return false;
 		}
 	}
-
-	/// <summary>
-	/// Runs all access validation hooks
-	/// </summary>
-	/// <param name="accessValidators">the access validation hooks</param>
-	/// <param name="entity">the entity or request model</param>
-	/// <param name="action">the type of action for the current operation</param>
-	/// <param name="logger">the current logger</param>
-	/// <typeparam name="TEntity">the type of the entity or request</typeparam>
-	/// <returns>whether all hooks ran successfully or not</returns>
-	public static async Task<bool> Validate<TEntity>(
-		this IEnumerable<IAccessValidator<TEntity>> accessValidators,
-		TEntity? entity,
-		ActionType action,
-		ILogger logger)
-	{
-		var context = new AccessValidationContext();
-		var anyValidators = false;
-
-		try
-		{
-			foreach (var validator in accessValidators)
-			{
-				anyValidators = true;
-				await validator.Validate(context, action, entity);
-			}
-		}
-		catch (Exception e)
-		{
-			logger.LogError(e, "One or more access validators failed to run");
-			return false;
-		}
-
-		return !anyValidators || context.CanAccess;
-	}
 }
