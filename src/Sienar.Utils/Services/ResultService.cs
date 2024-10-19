@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Sienar.Data;
 using Sienar.Hooks;
-using Sienar.Infrastructure;
 using Sienar.Processors;
 
 namespace Sienar.Services;
@@ -18,20 +17,17 @@ public class ResultService<TResult> : IResultService<TResult>
 	private readonly IAccessValidatorService<TResult> _accessValidator;
 	private readonly IAfterProcessService<TResult> _afterHooks;
 	private readonly IProcessor<TResult> _processor;
-	private readonly INotificationService _notifier;
 
 	public ResultService(
 		ILogger<ResultService<TResult>> logger,
 		IAccessValidatorService<TResult> accessValidator,
 		IAfterProcessService<TResult> afterHooks,
-		IProcessor<TResult> processor,
-		INotificationService notifier)
+		IProcessor<TResult> processor)
 	{
 		_logger = logger;
 		_accessValidator = accessValidator;
 		_afterHooks = afterHooks;
 		_processor = processor;
-		_notifier = notifier;
 	}
 
 	public virtual async Task<OperationResult<TResult?>> Execute()
@@ -40,10 +36,10 @@ public class ResultService<TResult> : IResultService<TResult>
 		var accessValidationResult = await _accessValidator.Validate(default, ActionType.ResultAction);
 		if (!accessValidationResult.Result)
 		{
-			return ProcessResult(new(
+			return new(
 				accessValidationResult.Status,
 				default,
-				accessValidationResult.Message));
+				accessValidationResult.Message);
 		}
 
 		OperationResult<TResult?> result;
@@ -54,26 +50,12 @@ public class ResultService<TResult> : IResultService<TResult>
 		catch (Exception e)
 		{
 			_logger.LogError(e, "{type} failed to process", typeof(IProcessor<TResult>));
-			return ProcessResult(new(OperationStatus.Unknown));
+			return new(OperationStatus.Unknown);
 		}
 
 		if (result.Status is OperationStatus.Success && result.Result is not null)
 		{
 			await _afterHooks.Run(result.Result, ActionType.ResultAction);
-		}
-
-		return ProcessResult(result);
-	}
-
-	private OperationResult<TResult?> ProcessResult(OperationResult<TResult?> result)
-	{
-		if (result.Status is OperationStatus.Success)
-		{
-			_notifier.Success(result.Message);
-		}
-		else
-		{
-			_notifier.Error(result.Message);
 		}
 
 		return result;

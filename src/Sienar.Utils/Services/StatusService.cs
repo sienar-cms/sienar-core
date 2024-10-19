@@ -20,7 +20,6 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 	private readonly IBeforeProcessService<TRequest> _beforeHooks;
 	private readonly IAfterProcessService<TRequest> _afterHooks;
 	private readonly IProcessor<TRequest, bool> _processor;
-	private readonly INotificationService _notifier;
 
 	public StatusService(
 		ILogger<StatusService<TRequest>> logger,
@@ -29,8 +28,7 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 		IStateValidatorService<TRequest> stateValidator,
 		IBeforeProcessService<TRequest> beforeHooks,
 		IAfterProcessService<TRequest> afterHooks,
-		IProcessor<TRequest, bool> processor,
-		INotificationService notifier)
+		IProcessor<TRequest, bool> processor)
 	{
 		_logger = logger;
 		_botDetector = botDetector;
@@ -39,7 +37,6 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 		_processor = processor;
-		_notifier = notifier;
 	}
 
 	/// <inheritdoc />
@@ -54,21 +51,21 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 		var result = await _accessValidator.Validate(request, ActionType.StatusAction);
 		if (!result.Result)
 		{
-			return ProcessResult(result);
+			return result;
 		}
 
 		// Run state validation
 		result = await _stateValidator.Validate(request, ActionType.StatusAction);
 		if (!result.Result)
 		{
-			return ProcessResult(result);
+			return result;
 		}
 
 		// Run before hooks
 		result = await _beforeHooks.Run(request, ActionType.StatusAction);
 		if (!result.Result)
 		{
-			return ProcessResult(result);
+			return result;
 		}
 
 		try
@@ -78,26 +75,12 @@ public class StatusService<TRequest> : IStatusService<TRequest>
 		catch (Exception e)
 		{
 			_logger.LogError(e, "{type} failed to process", typeof(IProcessor<TRequest>));
-			return ProcessResult(new(OperationStatus.Unknown));
+			return new(OperationStatus.Unknown);
 		}
 
 		if (result.Status is OperationStatus.Success)
 		{
 			await _afterHooks.Run(request, ActionType.StatusAction);
-		}
-
-		return ProcessResult(result);
-	}
-
-	private OperationResult<bool> ProcessResult(OperationResult<bool> result)
-	{
-		if (result.Status is OperationStatus.Success)
-		{
-			_notifier.Success(result.Message);
-		}
-		else
-		{
-			_notifier.Error(result.Message);
 		}
 
 		return result;

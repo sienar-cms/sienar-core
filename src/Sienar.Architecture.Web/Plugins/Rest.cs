@@ -59,9 +59,11 @@ public class Rest : IWebPlugin
 		builder.Services.AddEndpointsApiExplorer();
 		builder.Services.AddSwaggerGen();
 
-		builder.Services.AddScoped<IReadableNotificationService, RestNotificationService>();
-		builder.Services.AddScoped<INotificationService>(
-			sp => sp.GetRequiredService<IReadableNotificationService>());
+		builder.Services
+			.AddScoped<IReadableNotificationService, RestNotificationService>()
+			.AddScoped<INotificationService>(
+				sp => sp.GetRequiredService<IReadableNotificationService>())
+			.AddScoped<IOperationResultMapper, OperationResultMapper>();
 	}
 
 	/// <inheritdoc />

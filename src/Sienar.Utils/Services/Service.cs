@@ -20,7 +20,6 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 	private readonly IBeforeProcessService<TRequest> _beforeHooks;
 	private readonly IAfterProcessService<TRequest> _afterHooks;
 	private readonly IProcessor<TRequest, TResult> _processor;
-	private readonly INotificationService _notifier;
 
 	public Service(
 		ILogger<Service<TRequest, TResult>> logger,
@@ -29,8 +28,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		IStateValidatorService<TRequest> stateValidator,
 		IBeforeProcessService<TRequest> beforeHooks,
 		IAfterProcessService<TRequest> afterHooks,
-		IProcessor<TRequest, TResult> processor,
-		INotificationService notifier)
+		IProcessor<TRequest, TResult> processor)
 	{
 		_logger = logger;
 		_botDetector = botDetector;
@@ -39,7 +37,6 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		_beforeHooks = beforeHooks;
 		_afterHooks = afterHooks;
 		_processor = processor;
-		_notifier = notifier;
 	}
 
 	public virtual async Task<OperationResult<TResult?>> Execute(TRequest request)
@@ -53,30 +50,30 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		var accessValidationResult = await _accessValidator.Validate(request, ActionType.Action);
 		if (!accessValidationResult.Result)
 		{
-			return ProcessResult(new(
+			return new(
 				accessValidationResult.Status,
 				default,
-				accessValidationResult.Message));
+				accessValidationResult.Message);
 		}
 
 		// Run state validation
 		var stateValidationResult = await _stateValidator.Validate(request, ActionType.Action);
 		if (!stateValidationResult.Result)
 		{
-			return ProcessResult(new(
+			return new(
 				stateValidationResult.Status,
 				default,
-				stateValidationResult.Message));
+				stateValidationResult.Message);
 		}
 
 		// Run before hooks
 		var beforeHooksResult = await _beforeHooks.Run(request, ActionType.Action);
 		if (!beforeHooksResult.Result)
 		{
-			return ProcessResult(new(
+			return new(
 				beforeHooksResult.Status,
 				default,
-				beforeHooksResult.Message));
+				beforeHooksResult.Message);
 		}
 
 		OperationResult<TResult?> result;
@@ -87,26 +84,12 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		catch (Exception e)
 		{
 			_logger.LogError(e, "{type} failed to process", typeof(IProcessor<TRequest, TResult>));
-			return ProcessResult(new(OperationStatus.Unknown));
+			return new(OperationStatus.Unknown);
 		}
 
 		if (result.Status is OperationStatus.Success)
 		{
 			await _afterHooks.Run(request, ActionType.Action);
-		}
-
-		return ProcessResult(result);
-	}
-
-	private OperationResult<TResult?> ProcessResult(OperationResult<TResult?> result)
-	{
-		if (result.Status is OperationStatus.Success)
-		{
-			_notifier.Success(result.Message);
-		}
-		else
-		{
-			_notifier.Error(result.Message);
 		}
 
 		return result;
