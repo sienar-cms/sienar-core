@@ -39,14 +39,16 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		_afterHooks = afterHooks;
 	}
 
-	public async Task<Guid> Create(TEntity model)
+	public async Task<OperationResult<Guid>> Create(TEntity model)
 	{
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Create);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unauthorized,
+				default,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
@@ -55,14 +57,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(stateValidationResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(stateValidationResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that creation failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unprocessable,
+				default,
+				StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		// Run before hooks
@@ -71,14 +74,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(beforeHooksResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that creation failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unknown,
+				default,
+				StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		try
@@ -88,25 +92,31 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.CreateFailed());
-			return Guid.Empty;
+			return new(
+				OperationStatus.Unknown,
+				default,
+				StatusMessages.Crud<TEntity>.CreateFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(model, ActionType.Create);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.CreateSuccessful());
-		return model.Id;
+		return new(
+			OperationStatus.Success,
+			model.Id,
+			StatusMessages.Crud<TEntity>.CreateSuccessful());
 	}
 
-	public async Task<bool> Update(TEntity model)
+	public async Task<OperationResult<bool>> Update(TEntity model)
 	{
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(model, ActionType.Update);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return false;
+			return new(
+				OperationStatus.Unauthorized,
+				false,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
@@ -115,14 +125,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(stateValidationResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(stateValidationResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that update failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unprocessable,
+				false,
+				StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		// Run before hooks
@@ -131,14 +142,15 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(beforeHooksResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that update failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		try
@@ -148,14 +160,18 @@ public class EntityWriter<TEntity> : IEntityWriter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.UpdateFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.UpdateFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(model, ActionType.Update);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.UpdateSuccessful());
-		return true;
+		return new(
+			OperationStatus.Success,
+			true,
+			StatusMessages.Crud<TEntity>.UpdateSuccessful());
 	}
 }

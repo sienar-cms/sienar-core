@@ -39,7 +39,7 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		_afterHooks = afterHooks;
 	}
 
-	public async Task<bool> Delete(Guid id)
+	public async Task<OperationResult<bool>> Delete(Guid id)
 	{
 		TEntity? entity;
 		try
@@ -47,23 +47,29 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 			entity = await _repository.Read(id);
 			if (entity is null)
 			{
-				_notifier.Error(StatusMessages.Crud<TEntity>.NotFound(id));
-				return false;
+				return new(
+					OperationStatus.NotFound,
+					false,
+					StatusMessages.Crud<TEntity>.NotFound(id));
 			}
 		}
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(entity, ActionType.Delete);
 		if (!accessValidationResult.Result)
 		{
-			_notifier.Error(StatusMessages.Crud<TEntity>.NoPermission());
-			return false;
+			return new(
+				OperationStatus.Unauthorized,
+				false,
+				StatusMessages.Crud<TEntity>.NoPermission());
 		}
 
 		// Run state validation
@@ -72,14 +78,15 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(stateValidationResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(stateValidationResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that deletion failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unprocessable,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run before hooks
@@ -88,14 +95,15 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		{
 			if (!string.IsNullOrEmpty(beforeHooksResult.Message))
 			{
+				// Notify of this message because if it exists,
+				// the user needs to know in this case
 				_notifier.Error(beforeHooksResult.Message);
 			}
 
-			// Notify of failure regardless
-			// The user may not correctly infer that deletion failed
-			// based on whatever message was provided in the previous statement
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		try
@@ -105,14 +113,18 @@ public class EntityDeleter<TEntity> : IEntityDeleter<TEntity>
 		catch (Exception e)
 		{
 			_logger.LogError(e, StatusMessages.Database.QueryFailed);
-			_notifier.Error(StatusMessages.Crud<TEntity>.DeleteFailed());
-			return false;
+			return new(
+				OperationStatus.Unknown,
+				false,
+				StatusMessages.Crud<TEntity>.DeleteFailed());
 		}
 
 		// Run after hooks
 		await _afterHooks.Run(entity, ActionType.Delete);
 
-		_notifier.Success(StatusMessages.Crud<TEntity>.DeleteSuccessful());
-		return true;
+		return new(
+			OperationStatus.Success,
+			true,
+			StatusMessages.Crud<TEntity>.DeleteSuccessful());
 	}
 }
