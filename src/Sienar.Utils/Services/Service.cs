@@ -14,6 +14,7 @@ namespace Sienar.Services;
 public class Service<TRequest, TResult> : IService<TRequest, TResult>
 {
 	private readonly ILogger<Service<TRequest, TResult>> _logger;
+	private readonly IBotDetector _botDetector;
 	private readonly IAccessValidatorService<TRequest> _accessValidator;
 	private readonly IStateValidatorService<TRequest> _stateValidator;
 	private readonly IBeforeProcessService<TRequest> _beforeHooks;
@@ -23,6 +24,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 	public Service(
 		ILogger<Service<TRequest, TResult>> logger,
+		IBotDetector botDetector,
 		IAccessValidatorService<TRequest> accessValidator,
 		IStateValidatorService<TRequest> stateValidator,
 		IBeforeProcessService<TRequest> beforeHooks,
@@ -31,6 +33,7 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 		INotificationService notifier)
 	{
 		_logger = logger;
+		_botDetector = botDetector;
 		_accessValidator = accessValidator;
 		_stateValidator = stateValidator;
 		_beforeHooks = beforeHooks;
@@ -41,6 +44,11 @@ public class Service<TRequest, TResult> : IService<TRequest, TResult>
 
 	public virtual async Task<OperationResult<TResult?>> Execute(TRequest request)
 	{
+		if (request is Honeypot honeypot && _botDetector.IsSpambot(honeypot))
+		{
+			return new();
+		}
+
 		// Run access validation
 		var accessValidationResult = await _accessValidator.Validate(request, ActionType.Action);
 		if (!accessValidationResult.Result)
